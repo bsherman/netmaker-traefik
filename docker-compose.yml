@@ -45,7 +45,7 @@ services:
 
   netmaker:
     container_name: netmaker
-    image: gravitl/netmaker:v0.8.2
+    image: gravitl/netmaker:v0.8.4
     volumes:
       - /etc/netclient/config:/etc/netclient/config
       - nm_dnsconfig:/root/config/dnsconfig
