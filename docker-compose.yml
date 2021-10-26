@@ -47,10 +47,9 @@ services:
     container_name: netmaker
     image: gravitl/netmaker:v0.8.4
     volumes:
-      - /etc/netclient/config:/etc/netclient/config
-      - nm_dnsconfig:/root/config/dnsconfig
+      - dnsconfig:/root/config/dnsconfig
+      - sqldata:/root/data
       - /usr/bin/wg:/usr/bin/wg
-      - nm_sqldata:/root/data
     cap_add: 
       - NET_ADMIN
     restart: always
@@ -66,7 +65,7 @@ services:
       SERVER_GRPC_HOST: "grpc.${NM_BASE_DOMAIN}"
       API_PORT: "8081"
       GRPC_PORT: "50051"
-      CLIENT_MODE: "contained"
+      CLIENT_MODE: "on"
       MASTER_KEY: "${NM_MASTER_KEY}"
       SERVER_GRPC_WIREGUARD: "off"
       CORS_ALLOWED_ORIGIN: "*"
@@ -111,16 +110,16 @@ services:
       - "${NM_COREDNS_IP}:53:53/udp"
       - "${NM_COREDNS_IP}:53:53/tcp"
     volumes:
-      - nm_dnsconfig:/root/dnsconfig
+      - dnsconfig:/root/dnsconfig
 
 volumes:
-  nm_sqldata: 
+  sqldata:
     driver: local
     driver_opts:
       type: none
       device: /PATHTO/netmaker_sqldata
       o: bind
-  nm_dnsconfig:
+  dnsconfig:
     driver: local
     driver_opts:
       type: none
