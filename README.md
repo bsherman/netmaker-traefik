@@ -15,6 +15,15 @@ So, `cp sample.env .env`.
 Modify this `.env` file similarly to how it is suggested by "Quick Start" step 4, though don't change the key/variable names in the `.env` file
 Finally, ensure the `/PATHTO` values are modified in `docker-compose.yaml` to make where you want to store netmaker data and your `acme.json` (the file Traefik uses to track certificate management).
 
+Assuming you use `/PATHTO`, prepare the docker volumes like so:
+
+```
+mkdir -p /PATHTO/netmaker_sqldata
+mkdir -p /PATHTO/netmaker_dnsconfig
+touch /PATHTO/traefik_acme.json
+chmod 600 /PATHTO/traefik_acme.json
+```
+
 ## Commentary
 
 Note that typically one would not run a Traefik proxy with `network_mode: host`, but it's required in this case as we need to proxy `netmaker` (api/grpc) which is also `network_mode: host`. 
