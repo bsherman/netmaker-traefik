@@ -3,14 +3,20 @@ version: "3.4"
 services:
   netmaker:
     container_name: netmaker
-    image: gravitl/netmaker:v0.8.5
+    image: gravitl/netmaker:v0.9.0
     volumes:
-      - dnsconfig:/root/config/dnsconfig
+      - /var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket
+      - /run/systemd/system:/run/systemd/system
+      - /etc/systemd/system:/etc/systemd/system
+      - /sys/fs/cgroup:/sys/fs/cgroup
       - /usr/bin/wg:/usr/bin/wg
+      - dnsconfig:/root/config/dnsconfig
       - sqldata:/root/data
     cap_add: 
       - NET_ADMIN
+      - SYS_ADMIN
     restart: always
+    network_mode: host
     privileged: true
     environment:
       SERVER_HOST: "${NM_PUBLIC_IP}"
@@ -27,10 +33,10 @@ services:
       MASTER_KEY: "${NM_MASTER_KEY}"
       SERVER_GRPC_WIREGUARD: "off"
       CORS_ALLOWED_ORIGIN: "*"
+      DISPLAY_KEYS: "on"
       DATABASE: "sqlite"
+      NODE_ID: "netmaker-server-1"
       VERBOSITY: 0
-    ports:
-      - "51821-51830:51821-51830/udp"
     labels:
       - traefik.enable=true
       - traefik.http.routers.netmaker-api.entrypoints=websecure
@@ -46,7 +52,7 @@ services:
     container_name: netmaker-ui
     depends_on:
       - netmaker
-    image: gravitl/netmaker-ui:v0.8.5
+    image: gravitl/netmaker-ui:v0.9.1
     links:
       - "netmaker:api"
     environment:
@@ -94,7 +100,8 @@ services:
       - "--api.dashboard=true"
     environment:
       - CF_DNS_API_TOKEN=${CF_API_TOKEN}
-    restart: unless-stopped
+    restart: always
+    network_mode: host
     security_opt:
       - no-new-privileges:true
     volumes:
