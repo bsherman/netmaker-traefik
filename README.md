@@ -6,9 +6,9 @@ This is a sample traefik configuration for running Netmaker. It's mostly based o
 
 Note you can mostly follow the instructons from [Netmaker Quick Start](https://docs.netmaker.org/quick-start.html) except for a few differences.
 
-1. Prepare DNS - no change
-2. Install Dependencies - no change
-3. Open Firewall - no change (though this config does expect you'll have firewall allowing private access to your traefik dashboard)
+1. Prepare DNS - as instructed
+2. Install Dependencies - as instructed
+3. Open Firewall - as instructed (though this config does expect you'll have firewall allowing private access to your traefik dashboard)
 4. Install Netmaker - Instead of using `sed` commands to modify the `docker-config.yml` I suggest using a `.env` file to store your private/config vars.
 So, `cp sample.env .env`.
 Modify this `.env` file similarly to how it is suggested by "Quick Start" step 4, though don't change anything in the `docker-compose.yml` file, and only change VALUEs in the `.env` file, not the key/variable names themselves.
@@ -50,5 +50,5 @@ This detail is provided for the curious.
 
 It is important to note that in this default configuration the `netmaker` server automatically registers itself as a client named `netmaker` for each network created. However, instead of running a `netclient` process like typical clients, `CLIENT_MODE: on` means its client is embedded in the server. This allows simple automated behavior and enablement of both the the UDP hole punching and egress gateway routing features. The simple mode is accomplished by providing the `netmaker` container privileged access to the host system, thus allowing it to manage all wireguard and iptables packet handling for the system.
 
-The previous release had pulled all this management into the container itself, however, it led to one potentially significant limitation for the default configuration... remote client members of a managed network were NOT able to access the netmaker host system via the netmaker managed networks. For example, if you had a client at `10.10.10.2` it would not be able to SSH to netmaker host system at `10.10.10.1`, the user would need to SSH to the host's public IP.
+A previous release had pulled all this management into the container itself, however, it led to one potentially significant limitation for the default configuration... remote client members of a managed network were NOT able to access the netmaker host system via the netmaker managed networks. For example, if you had a client at `10.10.10.2` it would not be able to SSH to netmaker host system at `10.10.10.1`, the user would need to SSH to the host's public IP.
 
