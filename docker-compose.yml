@@ -3,26 +3,23 @@ version: "3.4"
 services:
   netmaker:
     container_name: netmaker
-    image: gravitl/netmaker:v0.9.4
+    image: gravitl/netmaker:v0.11.0
     volumes:
-      - /var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket
-      - /run/systemd/system:/run/systemd/system
-      - /etc/systemd/system:/etc/systemd/system
-      - /sys/fs/cgroup:/sys/fs/cgroup
-      - /usr/bin/wg:/usr/bin/wg
       - dnsconfig:/root/config/dnsconfig
+      - /usr/bin/wg:/usr/bin/wg
       - sqldata:/root/data
     cap_add: 
       - NET_ADMIN
-      - SYS_ADMIN
+      - NET_RAW
+      - SYS_MODULE
+    sysctls:
+      - net.ipv4.ip_forward=1
+      - net.ipv4.conf.all.src_valid_mark=1
     restart: always
-    network_mode: host
-    privileged: true
     environment:
       SERVER_HOST: "${NM_PUBLIC_IP}"
       SERVER_API_CONN_STRING: "api.${NM_BASE_DOMAIN}:443"
       SERVER_GRPC_CONN_STRING: "grpc.${NM_BASE_DOMAIN}:443"
-      COREDNS_ADDR: "${NM_COREDNS_IP}"
       GRPC_SSL: "on"
       DNS_MODE: "on"
       SERVER_HTTP_HOST: "api.${NM_BASE_DOMAIN}"
@@ -31,12 +28,19 @@ services:
       GRPC_PORT: "50051"
       CLIENT_MODE: "on"
       MASTER_KEY: "${NM_MASTER_KEY}"
-      SERVER_GRPC_WIREGUARD: "off"
       CORS_ALLOWED_ORIGIN: "*"
       DISPLAY_KEYS: "on"
       DATABASE: "sqlite"
       NODE_ID: "netmaker-server-1"
-      VERBOSITY: 0
+      MQ_HOST: "mq"
+      HOST_NETWORK: "off"
+      MANAGE_IPTABLES: "on"
+      PORT_FORWARD_SERVICES: "mq,dns,ssh"
+      VERBOSITY: "1"
+    ports:
+      - "51821-51830:51821-51830/udp"
+#      - "8081:8081"   # api endpoint exposed via traefik so not needed in ports
+#      - "50051:50051" # grpc endpoint exposed via traefik so not needed in ports
     labels:
       - traefik.enable=true
       - traefik.http.routers.netmaker-api.entrypoints=websecure
@@ -52,9 +56,11 @@ services:
     container_name: netmaker-ui
     depends_on:
       - netmaker
-    image: gravitl/netmaker-ui:v0.9.4
+    image: gravitl/netmaker-ui:v0.11.0
     links:
       - "netmaker:api"
+#    ports:
+#      - "8082:80" # UI endpoint exposed via traefik so not needed in ports
     environment:
       BACKEND_URL: "https://api.${NM_BASE_DOMAIN}"
     restart: always
@@ -62,6 +68,13 @@ services:
       - traefik.enable=true
       - traefik.http.routers.netmaker-ui-http.entrypoints=web
       - traefik.http.routers.netmaker-ui-http.rule=Host(`dashboard.${NM_BASE_DOMAIN}`)
+      - traefik.http.middlewares.nmui-security.headers.accessControlAllowOriginList=*.$${NM.BASE_DOMAIN}
+      - traefik.http.middlewares.nmui-security.headers.stsSeconds=31536000
+      - traefik.http.middlewares.nmui-security.headers.browserXssFilter=true
+      - traefik.http.middlewares.nmui-security.headers.customFrameOptionsValue=SAMEORIGIN
+      - traefik.http.middlewares.nmui-security.headers.customResponseHeaders.X-Robots-Tag=none
+      - traefik.http.middlewares.nmui-security.headers.customResponseHeaders.Server= # Remove the server name
+      - traefik.http.routers.netmaker-ui.middlewares=nmui-security@docker
       - traefik.http.routers.netmaker-ui.entrypoints=websecure
       - traefik.http.routers.netmaker-ui.rule=Host(`dashboard.${NM_BASE_DOMAIN}`)
       - traefik.http.routers.netmaker-ui.service=netmaker-ui
@@ -73,9 +86,6 @@ services:
     command: -conf /root/dnsconfig/Corefile
     container_name: coredns
     restart: always
-    ports:
-      - "${NM_COREDNS_IP}:53:53/udp"
-      - "${NM_COREDNS_IP}:53:53/tcp"
     volumes:
       - dnsconfig:/root/dnsconfig
   traefik:
@@ -101,7 +111,6 @@ services:
     environment:
       - CF_DNS_API_TOKEN=${CF_API_TOKEN}
     restart: always
-    network_mode: host
     security_opt:
       - no-new-privileges:true
     volumes:
@@ -113,15 +122,26 @@ services:
       - "443:443"
     labels:
       - traefik.enable=true
-      - traefik.http.middlewares.secure-ips.ipwhitelist.sourcerange=192.168.129.0/16,172.16.0.0/12,10.0.0.0/8
       - traefik.http.routers.traefik-http.entrypoints=web
       - traefik.http.routers.traefik-http.rule=Host(`${TRAEFIK_DOMAIN}`)
       - traefik.http.routers.traefik=api@internal
+      - traefik.http.middlewares.secure-ips.ipwhitelist.sourcerange=192.168.129.0/16,172.16.0.0/12,10.0.0.0/8
+      - traefik.http.routers.traefik.middlewares=secure-ips@docker
       - traefik.http.routers.traefik.entrypoints=websecure
       - traefik.http.routers.traefik.rule=Host(`${TRAEFIK_DOMAIN}`)
-      - traefik.http.routers.traefik.middlewares=secure-ips@docker
       - traefik.http.routers.traefik.service=api@internal
       - traefik.http.services.traefik-containers.loadbalancer.server.port=8080
+  mq:
+    image: eclipse-mosquitto:2.0.14
+    container_name: mq
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+    volumes:
+      - /PATHTO/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - mosquitto_data:/mosquitto/data
+      - mosquitto_logs:/mosquitto/log
+
 volumes:
   sqldata:
     driver: local
@@ -134,4 +154,16 @@ volumes:
     driver_opts:
       type: none
       device: /PATHTO/netmaker_dnsconfig
+      o: bind
+  mosquitto_data:
+    driver: local
+    driver_opts:
+      type: none
+      device: /PATHTO/netmaker_mosquitto_data
+      o: bind
+  mosquitto_logs:
+    driver: local
+    driver_opts:
+      type: none
+      device: /PATHTO/netmaker_mosquitto_logs
       o: bind
