@@ -61,7 +61,7 @@ services:
       - traefik.enable=true
       - traefik.http.routers.netmaker-ui-http.entrypoints=web
       - traefik.http.routers.netmaker-ui-http.rule=Host(`dashboard.${NM_BASE_DOMAIN}`)
-      - traefik.http.middlewares.nmui-security.headers.accessControlAllowOriginList=*.$${NM_BASE_DOMAIN}
+      - traefik.http.middlewares.nmui-security.headers.accessControlAllowOriginList=*.${NM_BASE_DOMAIN}
       - traefik.http.middlewares.nmui-security.headers.stsSeconds=31536000
       - traefik.http.middlewares.nmui-security.headers.browserXssFilter=true
       - traefik.http.middlewares.nmui-security.headers.customFrameOptionsValue=SAMEORIGIN
