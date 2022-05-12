@@ -2,9 +2,9 @@
 
 This is a sample traefik configuration for running Netmaker. It's mostly based on the [Netmaker Quick Start](https://docs.netmaker.org/quick-start.html) but using [Traefik Proxy 2.5](https://traefik.io/blog/announcing-traefik-proxy-2-5/) instead of Caddy or Nginx.
 
-## Version 0.12.2
+## Version 0.13.1
 
-This version of the config supports Netmaker 0.12.2. Per Netmaker documentation, it is NOT advised to upgrade a previous version to 0.12.
+This version of the config supports Netmaker 0.13.1. Per Netmaker documentation, it is NOT advised to upgrade a previous version to 0.13.
 
 ## Quick Start
 
@@ -39,10 +39,12 @@ It is VERY IMPORTANT that your firewall (`ufw` in the Ubuntu/Debian case) ONLY a
 
 As mentioned in "Quick Start" that is:
 
-- 443 (tcp): for Dashboard, REST API, and gRPC
+- 443 (tcp): for Dashboard and REST API
 - 53 (udp and tcp): for CoreDNS
 - 51821-518XX (udp): for WireGuard
+- 8883 (tcp): for MQ
 
+Note that MQ, though using SSL, is not proxied by Traefik (nor by Caddy in the Gravitl reference implementation).
 
 ## Differences from Caddy Reference
 
