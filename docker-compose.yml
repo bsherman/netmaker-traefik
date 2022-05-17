@@ -3,7 +3,7 @@ version: "3.4"
 services:
   netmaker:
     container_name: netmaker
-    image: gravitl/netmaker:v0.13.1
+    image: gravitl/netmaker:v0.14.0
     volumes:
       - dnsconfig:/root/config/dnsconfig
       - sqldata:/root/data
@@ -35,7 +35,8 @@ services:
       MQ_HOST: "mq"
       HOST_NETWORK: "off"
       VERBOSITY: "1"
-      MANAGE_IPTABLES: "off"
+      PORT_FORWARD_SERVICES: "dns"
+      MANAGE_IPTABLES: "on"
     ports:
       - "51821-51830:51821-51830/udp"
 #      - "8081:8081"   # api endpoint exposed via traefik so not needed in ports
@@ -49,7 +50,7 @@ services:
     container_name: netmaker-ui
     depends_on:
       - netmaker
-    image: gravitl/netmaker-ui:v0.13.1
+    image: gravitl/netmaker-ui:v0.14.0
     links:
       - "netmaker:api"
 #    ports:
@@ -82,7 +83,7 @@ services:
     volumes:
       - dnsconfig:/root/dnsconfig
   traefik:
-    image: traefik:v2.5
+    image: traefik:v2.6
     container_name: traefik
     command:
       - "--log.level=INFO"
@@ -136,7 +137,6 @@ services:
       - /PATHTO/certs/:/mosquitto/certs/
       - mosquitto_data:/mosquitto/data
       - mosquitto_logs:/mosquitto/log
-
 volumes:
   sqldata:
     driver: local

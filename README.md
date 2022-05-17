@@ -1,10 +1,10 @@
 # netmaker-traefik
 
-This is a sample traefik configuration for running Netmaker. It's mostly based on the [Netmaker Quick Start](https://docs.netmaker.org/quick-start.html) but using [Traefik Proxy 2.5](https://traefik.io/blog/announcing-traefik-proxy-2-5/) instead of Caddy or Nginx.
+This is a sample traefik configuration for running Netmaker. It's mostly based on the [Netmaker Quick Start](https://docs.netmaker.org/quick-start.html) but using [Traefik Proxy 2.6](https://traefik.io/blog/announcing-traefik-proxy-2-6/) instead of Caddy or Nginx.
 
-## Version 0.13.1
+## Version 0.14.0
 
-This version of the config supports Netmaker 0.13.1. Per Netmaker documentation, it is NOT advised to upgrade a previous version to 0.13.
+This version of the config supports Netmaker 0.14.0. Per Netmaker documentation, it is NOT advised to upgrade earlier versions to 0.12... while it IS acceptable to upgrade 0.13.x to 0.14.x.
 
 ## Quick Start
 
