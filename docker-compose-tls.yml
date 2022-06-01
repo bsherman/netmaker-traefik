@@ -1,0 +1,136 @@
+version: "3.4"
+
+services:
+  netmaker:
+    container_name: netmaker
+    image: gravitl/netmaker:v0.9.2
+    volumes:
+      - /var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket
+      - /run/systemd/system:/run/systemd/system
+      - /etc/systemd/system:/etc/systemd/system
+      - /sys/fs/cgroup:/sys/fs/cgroup
+      - /usr/bin/wg:/usr/bin/wg
+      - dnsconfig:/root/config/dnsconfig
+      - sqldata:/root/data
+    cap_add: 
+      - NET_ADMIN
+      - SYS_ADMIN
+    restart: always
+    network_mode: host
+    privileged: true
+    environment:
+      SERVER_HOST: "${NM_PUBLIC_IP}"
+      SERVER_API_CONN_STRING: "api.${NM_BASE_DOMAIN}:443"
+      SERVER_GRPC_CONN_STRING: "grpc.${NM_BASE_DOMAIN}:443"
+      COREDNS_ADDR: "${NM_COREDNS_IP}"
+      GRPC_SSL: "on"
+      DNS_MODE: "on"
+      SERVER_HTTP_HOST: "api.${NM_BASE_DOMAIN}"
+      SERVER_GRPC_HOST: "grpc.${NM_BASE_DOMAIN}"
+      API_PORT: "8081"
+      GRPC_PORT: "50051"
+      CLIENT_MODE: "on"
+      MASTER_KEY: "${NM_MASTER_KEY}"
+      SERVER_GRPC_WIREGUARD: "off"
+      CORS_ALLOWED_ORIGIN: "*"
+      DISPLAY_KEYS: "on"
+      DATABASE: "sqlite"
+      NODE_ID: "netmaker-server-1"
+      VERBOSITY: 0
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.netmaker-api.entrypoints=websecure
+      - traefik.http.routers.netmaker-api.rule=Host(`api.${NM_BASE_DOMAIN}`)
+      - traefik.http.routers.netmaker-api.service=netmaker-api
+      - traefik.http.services.netmaker-api.loadbalancer.server.port=8081
+      - traefik.http.routers.netmaker-grpc.entrypoints=websecure
+      - traefik.http.routers.netmaker-grpc.rule=Host(`grpc.${NM_BASE_DOMAIN}`)
+      - traefik.http.routers.netmaker-grpc.service=netmaker-grpc
+      - traefik.http.services.netmaker-grpc.loadbalancer.server.port=50051
+      - traefik.http.services.netmaker-grpc.loadbalancer.server.scheme=h2c
+  netmaker-ui:
+    container_name: netmaker-ui
+    depends_on:
+      - netmaker
+    image: gravitl/netmaker-ui:v0.9.2
+    links:
+      - "netmaker:api"
+    environment:
+      BACKEND_URL: "https://api.${NM_BASE_DOMAIN}"
+    restart: always
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.netmaker-ui-http.entrypoints=web
+      - traefik.http.routers.netmaker-ui-http.rule=Host(`dashboard.${NM_BASE_DOMAIN}`)
+      - traefik.http.routers.netmaker-ui.entrypoints=websecure
+      - traefik.http.routers.netmaker-ui.rule=Host(`dashboard.${NM_BASE_DOMAIN}`)
+      - traefik.http.routers.netmaker-ui.service=netmaker-ui
+      - traefik.http.services.netmaker-ui.loadbalancer.server.port=80
+  coredns:
+    depends_on:
+      - netmaker
+    image: coredns/coredns
+    command: -conf /root/dnsconfig/Corefile
+    container_name: coredns
+    restart: always
+    ports:
+      - "${NM_COREDNS_IP}:53:53/udp"
+      - "${NM_COREDNS_IP}:53:53/tcp"
+    volumes:
+      - dnsconfig:/root/dnsconfig
+  traefik:
+    image: traefik:v2.5
+    container_name: traefik
+    command:
+      - "--log.level=INFO"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+      - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.websecure.http.tls=true"
+      - "--entrypoints.websecure.http.tls.certResolver=dns"
+      - "--certificatesresolvers.dns.acme.email=${ACME_EMAIL}"
+      - "--certificatesresolvers.dns.acme.storage=acme.json"
+      - "--certificatesresolvers.dns.acme.tlschallenge=true"
+      - "--certificatesresolvers.dns.acme.caServer=https://acme-v02.api.letsencrypt.org/directory"
+      - "--providers.docker=true"
+      - "--providers.docker.endpoint=unix:///var/run/docker.sock"
+      - "--providers.docker.exposedByDefault=false"
+      - "--serverstransport.insecureskipverify=true"
+      - "--api.insecure=true"
+      - "--api.dashboard=true"
+    restart: always
+    network_mode: host
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /root/netmaker/traefik_acme.json:/acme.json
+    ports:
+      - "80:80"
+      - "443:443"
+    labels:
+      - traefik.enable=true
+      - traefik.http.middlewares.secure-ips.ipwhitelist.sourcerange=192.168.129.0/16,172.16.0.0/12,10.0.0.0/8
+      - traefik.http.routers.traefik-http.entrypoints=web
+      - traefik.http.routers.traefik-http.rule=Host(`${TRAEFIK_DOMAIN}`)
+      - traefik.http.routers.traefik=api@internal
+      - traefik.http.routers.traefik.entrypoints=websecure
+      - traefik.http.routers.traefik.rule=Host(`${TRAEFIK_DOMAIN}`)
+      - traefik.http.routers.traefik.middlewares=secure-ips@docker
+      - traefik.http.routers.traefik.service=api@internal
+      - traefik.http.services.traefik-containers.loadbalancer.server.port=8080
+volumes:
+  sqldata:
+    driver: local
+    driver_opts:
+      type: none
+      device: /root/netmaker/netmaker_sqldata
+      o: bind
+  dnsconfig:
+    driver: local
+    driver_opts:
+      type: none
+      device: /root/netmaker/netmaker_dnsconfig
+      o: bind
