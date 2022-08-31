@@ -1,5 +1,7 @@
 # netmaker-traefik
 
+## The official netmaker docker-compose example now uses Traefik, so I'm archiving this repo.
+
 This is a sample traefik configuration for running Netmaker. It's mostly based on the [Netmaker Quick Start](https://docs.netmaker.org/quick-start.html) but using [Traefik Proxy 2.6](https://traefik.io/blog/announcing-traefik-proxy-2-6/) instead of Caddy or Nginx.
 
 ## Version 0.14.1
