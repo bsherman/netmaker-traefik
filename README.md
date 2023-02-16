@@ -1,6 +1,13 @@
 # netmaker-traefik
 
-## The official netmaker docker-compose example now uses Traefik, so I'm archiving this repo.
+## IMPORTANT NOTE
+#### I stopped updating this repo for a time when [Netmaker](https://github.com/gravitl/netmaker#readme) was using traefik as their default proxy; I didn't want to duplicate effort/add confusion. They have now ceased using traefik, so I intend to upgrade this repo to again track mainline but as 'netmaker, the traefik way'. 
+
+#### As of this writing, this repo is at netmaker version 0.14.1 while upstream is at 0.17.1.
+
+#### If you are only looking for netmaker docker-compose, checkout the [netmaker docker-compose.yaml](https://github.com/gravitl/netmaker/blob/master/compose/docker-compose.yml) and the relevant [official docker compose documentation](https://docs.netmaker.org/server-installation.html#compose-file-annotated)
+
+-------------------
 
 This is a sample traefik configuration for running Netmaker. It's mostly based on the [Netmaker Quick Start](https://docs.netmaker.org/quick-start.html) but using [Traefik Proxy 2.6](https://traefik.io/blog/announcing-traefik-proxy-2-6/) instead of Caddy or Nginx.
 
