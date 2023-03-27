@@ -11,32 +11,29 @@ This version of the config supports Netmaker 0.17.1. Please reivew [Netmaker upg
 Note you can mostly follow the instructons from [Netmaker Quick Start](https://netmaker.readthedocs.io/en/master/quick-start.html) except for a few differences.
 
 Note: This example uses the community version of Netmaker
+
 0. Prerequisites - as instructed
 1. Prepare DNS - as instructed
 2. Install Dependencies - as instructed
 3. Open Firewall - as instructed (though this config does expect you'll have firewall allowing private access to your traefik dashboard)
-4. Prepare MQ - as specified but NOTE: our `docker-compose.yml` uses `/PATHTO/` as a placeholder rather than assuming `/root/` so you may want the following instead of the default:
-
-```
-wget -O /PATHTO/mosquitto.conf https://raw.githubusercontent.com/gravitl/netmaker/master/docker/mosquitto.conf
-wget -q -O /PATHTO/wait.sh https://raw.githubusercontent.com/gravitl/netmaker/develop/docker/wait.sh
-chmod +x wait.sh
-```
-
+4. Prepare MQ - as specified but NOTE: our `docker-compose.yml` uses `/PATHTO/` as a placeholder rather than assuming `/root/` so you may want the skip the wget of mosquitto.conf and wait.sh until directed below.
 5. Install Netmaker - Instead of downloading and using `sed` commands to modify the `docker-config.yml` I suggest using the provided (in this repo) `docker-compose.yml` and `sample.env` file to store your private/config vars.
-- So, `cp sample.env .env`.
-- Modify this `.env` file similarly to how it is suggested by "Quick Start" step 5, though don't change anything in the `docker-compose.yml` file, and only change VALUES in the `.env` file, not the key/variable names themselves.
-- get the server IP `ip route get 1 | sed -n 's/^.*src \([0-9.]*\) .*$/\1/p'`
-- generate 2 unique values for MASTER_KEY/MQ_ADMIN_PASSWORD: `tr -dc A-Za-z0-9 </dev/urandom | head -c 30 ; echo ''`
-- Finally, ensure the `/PATHTO` values are modified in `docker-compose.yml` to be where you want to store specified volume data and your `acme.json` (the file Traefik uses to track certificate management).
+    - So, `cp sample.env .env`.
+    - Get the SERVER_PUBLIC_IP `ip route get 1 | sed -n 's/^.*src \([0-9.]*\) .*$/\1/p'`
+    - Generate 2 unique values for MASTER_KEY/MQ_ADMIN_PASSWORD: `tr -dc A-Za-z0-9 </dev/urandom | head -c 30 ; echo ''`
+    - Modify this `.env` file similarly to how it is suggested by "Quick Start" step 5, though don't change anything in the `docker-compose.yml` file, and only change VALUES in the `.env` file, not the key/variable names themselves.
+    - Finally, ensure the `/PATHTO` values are modified in `docker-compose.yml` to be where you want to store specified volume data and your `acme.json` (the file Traefik uses to track certificate management).
 
-Assuming you use `/PATHTO`, prepare the docker volumes like so:
+Assuming you use `/PATHTO`, prepare the docker volumes and files like so:
 
 ```
 mkdir -p /PATHTO/netmaker_sqldata
 mkdir -p /PATHTO/netmaker_dnsconfig
 mkdir -p /PATHTO/netmaker_mosquitto_data
 mkdir -p /PATHTO/netmaker_mosquitto_logs
+wget -O /PATHTO/mosquitto.conf https://raw.githubusercontent.com/gravitl/netmaker/master/docker/mosquitto.conf
+wget -q -O /PATHTO/wait.sh https://raw.githubusercontent.com/gravitl/netmaker/develop/docker/wait.sh
+chmod +x wait.sh
 touch /PATHTO/traefik_acme.json
 chmod 600 /PATHTO/traefik_acme.json
 ```
