@@ -1,5 +1,7 @@
 # netmaker-traefik
 
+## Notice: this has been archived due to a shortage of time to maintain and test.
+
 This is a sample traefik configuration for running Netmaker. It's mostly based on the [Netmaker Quick Start](https://docs.netmaker.org/quick-start.html) but using [Traefik Proxy 2.9](https://traefik.io/blog/announcing-traefik-proxy-2-9/) instead of Caddy.
 
 ## Version 0.17.1
